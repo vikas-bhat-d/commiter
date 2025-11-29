@@ -12,38 +12,19 @@ const PORT = process.env.PORT;
 // -------------------------------
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN, // e.g. "http://localhost:5173"
+    origin: process.env.CORS_ORIGIN,
     methods: ["GET"],
     credentials: false,
   })
 );
 
 // -------------------------------
-//  WEATHER REDUCER (EXP–3)
+//  PROGRAM CODES MAPPED BY NUMBER
 // -------------------------------
-const weatherReducerCode = `
-import org.apache.hadoop.io.IntWritable; 
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Reducer; 
-import java.io.IOException;
-
-public class WeatherReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
-    @Override
-    public void reduce(IntWritable key, Iterable<Text> values, Context context)
-            throws IOException, InterruptedException {
-        String weatherCondition = null;
-        for (Text val : values) {
-            weatherCondition = val.toString();
-        }
-        context.write(key, new Text(weatherCondition));
-    }
-}
-`;
-
-// -------------------------------
-//  MATRIX (EXP–2)
-// -------------------------------
-const matrixMapperCode = `
+const programs = {
+  2: {
+    filename: "Matrix_Mapper.txt",
+    code: `
 package org.experiment2;
 
 import org.apache.hadoop.io.*;
@@ -74,12 +55,34 @@ public class Matrix_Mapper extends Mapper<LongWritable, Text, Text, Text> {
         }
     }
 }
-`;
+`,
+  },
 
-// -------------------------------
-//  TAG MAPPER (EXP–4)
-// -------------------------------
-const tagMapperCode = `
+  3: {
+    filename: "WeatherReducer.txt",
+    code: `
+import org.apache.hadoop.io.IntWritable; 
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer; 
+import java.io.IOException;
+
+public class WeatherReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
+    @Override
+    public void reduce(IntWritable key, Iterable<Text> values, Context context)
+            throws IOException, InterruptedException {
+        String weatherCondition = null;
+        for (Text val : values) {
+            weatherCondition = val.toString();
+        }
+        context.write(key, new Text(weatherCondition));
+    }
+}
+`,
+  },
+
+  4: {
+    filename: "TagMapper.txt",
+    code: `
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper; 
 import java.io.IOException;
@@ -100,12 +103,12 @@ public class TagMapper extends Mapper<Object, Text, Text, Text> {
         }
     }
 }
-`;
+`,
+  },
 
-// -------------------------------
-//  WORD COUNT MAPPER (EXP–8)
-// -------------------------------
-const wordCountMapperCode = `
+  8: {
+    filename: "WC_Mapper.txt",
+    code: `
 package org.experiment8;
 
 import java.io.IOException; 
@@ -137,53 +140,38 @@ public class WC_Mapper extends MapReduceBase
         }
     }
 }
-`;
+`,
+  },
+};
 
 // -------------------------------
-//  ROUTES FOR DOWNLOAD
+//  DOWNLOAD ROUTE — uses program number
 // -------------------------------
-app.get("/download/weatherReducer", (req, res) => {
-  res.setHeader("Content-Disposition", "attachment; filename=WeatherReducer.txt");
-  res.send(weatherReducerCode);
+app.get("/download/:num", (req, res) => {
+  const num = req.params.num;
+  const program = programs[num];
+
+  if (!program) {
+    return res.status(404).send("Program not found");
+  }
+
+  res.setHeader("Content-Disposition", `attachment; filename=${program.filename}`);
+  res.send(program.code);
 });
 
-app.get("/download/matrixMapper", (req, res) => {
-  res.setHeader("Content-Disposition", "attachment; filename=Matrix_Mapper.txt");
-  res.send(matrixMapperCode);
-});
+// -------------------------------
+//  COPY ROUTE — uses program number
+// -------------------------------
+app.get("/copy/:num", (req, res) => {
+  const num = req.params.num;
+  const program = programs[num];
 
-app.get("/download/tagMapper", (req, res) => {
-  res.setHeader("Content-Disposition", "attachment; filename=TagMapper.txt");
-  res.send(tagMapperCode);
-});
+  if (!program) {
+    return res.status(404).json({ error: "Program not found" });
+  }
 
-app.get("/download/wordCountMapper", (req, res) => {
-  res.setHeader("Content-Disposition", "attachment; filename=WC_Mapper.txt");
-  res.send(wordCountMapperCode);
-});
-
-
-app.get("/copy/weatherReducer", (req, res) => {
   res.json({
-    content: weatherReducerCode,
-  });
-});
-
-app.get("/copy/matrixMapper", (req, res) => {
-  res.json({
-    content: matrixMapperCode,
-  });
-});
-
-app.get("/copy/tagMapper", (req, res) => {
-  res.json({
-    content: tagMapperCode,
-  });
-});
-
-app.get("/copy/wordCountMapper", (req, res) => {
-  res.json({
-    content: wordCountMapperCode,
+    content: program.code,
   });
 });
 
