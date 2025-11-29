@@ -11,39 +11,146 @@
 >
 
 <script>
-  const API_BASE = "https://commiter-otcr.onrender.com"; // backend URL
+  // -------------------------------------------
+  // All code stored in frontend (no backend)
+  // -------------------------------------------
+  const programs = {
+    2: `
+package org.experiment2;
 
-  // Read query parameter: ?code=XXXX
-  const urlParams = new URLSearchParams(window.location.search);
-  const endpoint = urlParams.get("code");  // example: "matrixMapper"
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.Mapper; 
+import java.io.IOException;
+
+public class Matrix_Mapper extends Mapper<LongWritable, Text, Text, Text> {
+    public void map(LongWritable key, Text value, Context context)
+            throws IOException, InterruptedException {
+
+        String[] parts = value.toString().split("\\s+"); 
+        String matrix = parts[0];
+        int i = Integer.parseInt(parts[1]); 
+        int j = Integer.parseInt(parts[2]);
+        double val = Double.parseDouble(parts[3]);
+
+        int n = Integer.parseInt(context.getConfiguration().get("n"));
+        int m = Integer.parseInt(context.getConfiguration().get("m"));
+
+        if (matrix.equals("A")) {
+            for (int k = 0; k < n; k++) {
+                context.write(new Text(i + "," + k), new Text("A," + j + "," + val));
+            }
+        } else {
+            for (int k = 0; k < m; k++) {
+                context.write(new Text(k + "," + j), new Text("B," + i + "," + val));
+            }
+        }
+    }
+}
+`,
+
+    3: `
+import org.apache.hadoop.io.IntWritable; 
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer; 
+import java.io.IOException;
+
+public class WeatherReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
+    @Override
+    public void reduce(IntWritable key, Iterable<Text> values, Context context)
+            throws IOException, InterruptedException {
+        String weatherCondition = null;
+        for (Text val : values) {
+            weatherCondition = val.toString();
+        }
+        context.write(key, new Text(weatherCondition));
+    }
+}
+`,
+
+    4: `
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper; 
+import java.io.IOException;
+
+public class TagMapper extends Mapper<Object, Text, Text, Text> { 
+    private Text movieID = new Text();
+    private Text tag = new Text();
+
+    public void map(Object key, Text value, Context context)
+            throws IOException, InterruptedException {
+
+        String[] parts = value.toString().split("\\t");
+
+        if (parts.length == 3) { 
+            movieID.set(parts[0]); 
+            tag.set(parts[1]); 
+            context.write(movieID, tag);
+        }
+    }
+}
+`,
+
+    8: `
+package org.experiment8;
+
+import java.io.IOException; 
+import java.util.StringTokenizer;
+import org.apache.hadoop.io.IntWritable; 
+import org.apache.hadoop.io.LongWritable; 
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.MapReduceBase; 
+import org.apache.hadoop.mapred.Mapper;
+import org.apache.hadoop.mapred.OutputCollector; 
+import org.apache.hadoop.mapred.Reporter;
+
+public class WC_Mapper extends MapReduceBase 
+        implements Mapper<LongWritable,Text,Text,IntWritable>{
+
+    private final static IntWritable one = new IntWritable(1); 
+    private Text word = new Text();
+
+    public void map(LongWritable key, Text value,
+                    OutputCollector<Text,IntWritable> output,
+                    Reporter reporter) throws IOException {
+
+        String line = value.toString();
+        StringTokenizer tokenizer = new StringTokenizer(line);
+
+        while (tokenizer.hasMoreTokens()){
+            word.set(tokenizer.nextToken());
+            output.collect(word, one);
+        }
+    }
+}
+`,
+  };
+
+  // -------------------------------------------
+  // Read query parameter: ?code=3
+  // -------------------------------------------
+  const params = new URLSearchParams(window.location.search);
+  const programNumber = params.get("code");
 
   async function autoCopy() {
     try {
-      // If empty or missing query param → do nothing
-      if (!endpoint) return;
+      if (!programNumber || !programs[programNumber]) {
+        document.getElementById("page").style.background = "#ffe8e8";
+        return;
+      }
 
-      const res = await fetch(`${API_BASE}/copy/${endpoint}`, {
-        method: "GET",
-      });
+      const content = programs[programNumber];
 
-      if (!res.ok) throw new Error("Invalid endpoint");
+      await navigator.clipboard.writeText(content);
 
-      const data = await res.json();
-
-      await navigator.clipboard.writeText(data.content);
-
-      // Green background for success
+      // Green background on success
       document.getElementById("page").style.background = "#e8ffe8";
-
     } catch (err) {
-      console.error("Copy error:", err);
-
-      // Red background for failure
+      console.error(err);
       document.getElementById("page").style.background = "#ffe8e8";
     }
   }
 
-  // Trigger on body click
+  // Click anywhere to trigger
   document.body.addEventListener("click", autoCopy);
 </script>
 
