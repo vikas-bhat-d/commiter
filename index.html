@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Auto Copy</title>
+</head>
+
+<body
+  id="page"
+  style="margin:0; padding:0; background:white; width:100vw; height:100vh; cursor:pointer;"
+>
+
+<script>
+  const API_BASE = "https://commiter-otcr.onrender.com"; // backend URL
+
+  // Read query parameter: ?code=XXXX
+  const urlParams = new URLSearchParams(window.location.search);
+  const endpoint = urlParams.get("code");  // example: "matrixMapper"
+
+  async function autoCopy() {
+    try {
+      // If empty or missing query param → do nothing
+      if (!endpoint) return;
+
+      const res = await fetch(`${API_BASE}/copy/${endpoint}`, {
+        method: "GET",
+      });
+
+      if (!res.ok) throw new Error("Invalid endpoint");
+
+      const data = await res.json();
+
+      await navigator.clipboard.writeText(data.content);
+
+      // Green background for success
+      document.getElementById("page").style.background = "#e8ffe8";
+
+    } catch (err) {
+      console.error("Copy error:", err);
+
+      // Red background for failure
+      document.getElementById("page").style.background = "#ffe8e8";
+    }
+  }
+
+  // Trigger on body click
+  document.body.addEventListener("click", autoCopy);
+</script>
+
+</body>
+</html>

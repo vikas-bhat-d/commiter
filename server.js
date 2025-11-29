@@ -162,6 +162,31 @@ app.get("/download/wordCountMapper", (req, res) => {
   res.send(wordCountMapperCode);
 });
 
+
+app.get("/copy/weatherReducer", (req, res) => {
+  res.json({
+    content: weatherReducerCode,
+  });
+});
+
+app.get("/copy/matrixMapper", (req, res) => {
+  res.json({
+    content: matrixMapperCode,
+  });
+});
+
+app.get("/copy/tagMapper", (req, res) => {
+  res.json({
+    content: tagMapperCode,
+  });
+});
+
+app.get("/copy/wordCountMapper", (req, res) => {
+  res.json({
+    content: wordCountMapperCode,
+  });
+});
+
 // -------------------------------
 
 app.listen(PORT, () => {
