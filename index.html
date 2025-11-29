@@ -202,12 +202,60 @@ Steps:
   // -----------------------------
   // COMMANDS
   // -----------------------------
-  const commands = {
-    2: `hadoop jar target/Matrix-1.0-SNAPSHOT.jar org.experiment2.Matrix_Runner /Matrix/Matrix.txt /Out 1 2`,
-    3: `hadoop jar target/Weather.jar com.weather.WeatherMapReduce /input /output`,
-    4: `hadoop jar target/tags.jar TagDriver /input/movie_tags.tsv /output`,
-    8: `hadoop jar target/Wordcount.jar org.experiment8.WC_Runner /Input/sample.txt /Output`
-  };
+const commands = {
+  2: `
+
+hadoop fs -mkdir /Matrix
+
+hadoop fs -put Matrix.txt /Matrix
+
+hadoop jar target/Matrix-1.0-SNAPSHOT.jar org.experiment2.Matrix_Runner /Matrix/Matrix.txt /Output1 1 2
+
+`,
+
+  3: `
+
+hadoop fs -put weather_data.csv /input/weather_data.csv
+
+hadoop jar target/weather-mapreduce-1.0-SNAPSHOT.jar com.weather.WeatherMapReduce /input/weather_data.csv /output/weather_output
+
+`,
+
+  4: `
+
+hadoop fs -put movie_tags.tsv /input/movie_tags.tsv
+
+hadoop jar target/tags.jar TagDriver /input/movie_tags.tsv /output
+
+`,
+
+  8: `
+
+hadoop fs -mkdir /Input
+
+hadoop fs -put File.txt /Input
+
+hadoop jar target/Wordcount-1.0-SNAPSHOT.jar org.experiment8.WC_Runner /Input/File.txt /Output
+
+`
+};
+
+
+// -----------------------------
+// MONGODB COMMANDS FOR EXP 5
+// -----------------------------
+const mongoCommands = {
+  5: `
+db.students.aggregate([
+  { $group: { _id: null, averageMarks: { $avg: "$marks" } } }
+])
+
+db.students.aggregate([
+  { $group: { _id: "$grade", count: { $sum: 1 } } }
+])
+`
+};
+
 
   // -----------------------------
   // HANDLING QUERY PARAMS
@@ -251,6 +299,12 @@ Steps:
 
       if (cmdNum && commands[cmdNum]) {
         await navigator.clipboard.writeText(commands[cmdNum]);
+        page.classList.add("success");
+        return;
+      }
+
+      if (params.get("mongo") && mongoCommands[params.get("mongo")]) {
+        await navigator.clipboard.writeText(mongoCommands[params.get("mongo")]);
         page.classList.add("success");
         return;
       }
