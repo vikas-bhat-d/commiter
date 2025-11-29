@@ -2,33 +2,59 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Auto Copy</title>
+  <title>Auto Copy Tool</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      cursor: pointer;
+
+      /*  FULLSCREEN BACKGROUND IMAGE  */
+      background-image: url("hadoop_bg.png");  /* <- your image file */
+      background-size: cover; 
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    /* SUCCESS overlay tint (applied dynamically) */
+    .success {
+      background-color: rgba(0, 255, 0, 0.15) !important;
+      background-blend-mode: overlay;
+    }
+
+    /* ERROR overlay tint */
+    .error {
+      background-color: rgba(255, 0, 0, 0.15) !important;
+      background-blend-mode: overlay;
+    }
+  </style>
 </head>
 
-<body
-  id="page"
-  style="margin:0; padding:0; background:white; width:100vw; height:100vh; cursor:pointer;"
->
+<body id="page">
 
 <script>
-  // -------------------------------------------
-  // All code stored in frontend (no backend)
-  // -------------------------------------------
-  const programs = {
-    2: `
+  // -----------------------------
+  // PROGRAM CODE SNIPPETS
+  // -----------------------------
+  const programCode = {
+    2: `// MATRIX MULTIPLICATION MAPPER (Exp 2)
 package org.experiment2;
 
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.Mapper; 
+import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 
 public class Matrix_Mapper extends Mapper<LongWritable, Text, Text, Text> {
     public void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
 
-        String[] parts = value.toString().split("\\s+"); 
+        String[] parts = value.toString().split("\\s+");
         String matrix = parts[0];
-        int i = Integer.parseInt(parts[1]); 
+        int i = Integer.parseInt(parts[1]);
         int j = Integer.parseInt(parts[2]);
         double val = Double.parseDouble(parts[3]);
 
@@ -45,13 +71,12 @@ public class Matrix_Mapper extends Mapper<LongWritable, Text, Text, Text> {
             }
         }
     }
-}
-`,
+}`, 
 
-    3: `
-import org.apache.hadoop.io.IntWritable; 
+    3: `// WEATHER REDUCER (Exp 3)
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Reducer; 
+import org.apache.hadoop.mapreduce.Reducer;
 import java.io.IOException;
 
 public class WeatherReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
@@ -64,15 +89,14 @@ public class WeatherReducer extends Reducer<IntWritable, Text, IntWritable, Text
         }
         context.write(key, new Text(weatherCondition));
     }
-}
-`,
+}`, 
 
-    4: `
+    4: `// TAG MAPPER (Exp 4)
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper; 
+import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 
-public class TagMapper extends Mapper<Object, Text, Text, Text> { 
+public class TagMapper extends Mapper<Object, Text, Text, Text> {
     private Text movieID = new Text();
     private Text tag = new Text();
 
@@ -81,32 +105,31 @@ public class TagMapper extends Mapper<Object, Text, Text, Text> {
 
         String[] parts = value.toString().split("\\t");
 
-        if (parts.length == 3) { 
-            movieID.set(parts[0]); 
-            tag.set(parts[1]); 
+        if (parts.length == 3) {
+            movieID.set(parts[0]);
+            tag.set(parts[1]);
             context.write(movieID, tag);
         }
     }
-}
-`,
+}`, 
 
-    8: `
+    8: `// WORD COUNT MAPPER (Exp 8)
 package org.experiment8;
 
-import java.io.IOException; 
+import java.io.IOException;
 import java.util.StringTokenizer;
-import org.apache.hadoop.io.IntWritable; 
-import org.apache.hadoop.io.LongWritable; 
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.MapReduceBase; 
+import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
-import org.apache.hadoop.mapred.OutputCollector; 
+import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 
-public class WC_Mapper extends MapReduceBase 
+public class WC_Mapper extends MapReduceBase
         implements Mapper<LongWritable,Text,Text,IntWritable>{
 
-    private final static IntWritable one = new IntWritable(1); 
+    private final static IntWritable one = new IntWritable(1);
     private Text word = new Text();
 
     public void map(LongWritable key, Text value,
@@ -121,37 +144,126 @@ public class WC_Mapper extends MapReduceBase
             output.collect(word, one);
         }
     }
-}
-`,
+}`
   };
 
-  // -------------------------------------------
-  // Read query parameter: ?code=3
-  // -------------------------------------------
-  const params = new URLSearchParams(window.location.search);
-  const programNumber = params.get("code");
+  // -----------------------------
+  // DATASETS
+  // -----------------------------
+  const datasets = {
+    2: `A 0 0 1
+A 0 1 2
+B 0 0 3
+B 1 0 4`,
 
-  async function autoCopy() {
+    3: `date,temperature,humidity,wind_speed
+2025-03-28,21,65,15
+2025-03-29,15,80,5
+2025-03-30,25,50,20`,
+
+    4: `1	Action	1564015811
+2	Drama	1564015822
+3	Comedy	1564015833`,
+
+    8: `TRAIN CYCLE BUS CAR BIKE
+BIKE
+CAR
+TRAIN
+CYCLE
+CAR
+BIKE`
+  };
+
+  // -----------------------------
+  // INSTRUCTIONS
+  // -----------------------------
+  const instructions = {
+    2: `Experiment 2 – MATRIX MULTIPLICATION
+Steps:
+1. Start Hadoop
+2. Create IntelliJ project org.experiment2
+3. Add Mapper, Reducer, Runner
+4. mvn install
+5. Run jar with input & output`,
+    3: `Experiment 3 – WEATHER MAPREDUCE
+1. Add mapper/reducer/driver
+2. Put CSV into HDFS
+3. Run job using jar file`,
+    4: `Experiment 4 – MOVIE TAG ANALYSIS
+1. Add TagMapper, TagReducer
+2. Put TSV into HDFS
+3. Run jar`,
+    8: `Experiment 8 – WORD COUNT
+1. Add WC_Mapper, WC_Reducer
+2. Put text file into HDFS
+3. Run jar`
+  };
+
+  // -----------------------------
+  // COMMANDS
+  // -----------------------------
+  const commands = {
+    2: `hadoop jar target/Matrix-1.0-SNAPSHOT.jar org.experiment2.Matrix_Runner /Matrix/Matrix.txt /Out 1 2`,
+    3: `hadoop jar target/Weather.jar com.weather.WeatherMapReduce /input /output`,
+    4: `hadoop jar target/tags.jar TagDriver /input/movie_tags.tsv /output`,
+    8: `hadoop jar target/Wordcount.jar org.experiment8.WC_Runner /Input/sample.txt /Output`
+  };
+
+  // -----------------------------
+  // HANDLING QUERY PARAMS
+  // -----------------------------
+  const params = new URLSearchParams(window.location.search);
+  const codeNum = params.get("code");
+  const dataNum = params.get("data");
+  const insNum = params.get("ins");
+  const cmdNum = params.get("command");
+
+  function download(filename, text) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  }
+
+  async function handleAction() {
+    const page = document.getElementById("page");
+    page.classList.remove("success", "error");
+
     try {
-      if (!programNumber || !programs[programNumber]) {
-        document.getElementById("page").style.background = "#ffe8e8";
+      if (codeNum && programCode[codeNum]) {
+        await navigator.clipboard.writeText(programCode[codeNum]);
+        page.classList.add("success");
         return;
       }
 
-      const content = programs[programNumber];
+      if (dataNum && datasets[dataNum]) {
+        download(`dataset_${dataNum}.txt`, datasets[dataNum]);
+        page.classList.add("success");
+        return;
+      }
 
-      await navigator.clipboard.writeText(content);
+      if (insNum && instructions[insNum]) {
+        await navigator.clipboard.writeText(instructions[insNum]);
+        page.classList.add("success");
+        return;
+      }
 
-      // Green background on success
-      document.getElementById("page").style.background = "#e8ffe8";
+      if (cmdNum && commands[cmdNum]) {
+        await navigator.clipboard.writeText(commands[cmdNum]);
+        page.classList.add("success");
+        return;
+      }
+
+      page.classList.add("error");
+
     } catch (err) {
+      page.classList.add("error");
       console.error(err);
-      document.getElementById("page").style.background = "#ffe8e8";
     }
   }
 
-  // Click anywhere to trigger
-  document.body.addEventListener("click", autoCopy);
+  document.body.addEventListener("click", handleAction);
 </script>
 
 </body>
